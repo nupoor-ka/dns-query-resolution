@@ -14,8 +14,12 @@ host_objs = [net.get('h1'), net.get('h2'), net.get('h3'), net.get('h4')]
 dns = net.get('dns')
 
 # Start your custom DNS server in background
-dns.cmd('python3 /home/mininet/dns-query-resolution/custom_dns.py &')
-time.sleep(2)  # wait for DNS server to start
+# dns.cmd('python3 /home/mininet/dns-query-resolution/custom_dns.py &')
+# time.sleep(2)  # wait for DNS server to start
+dns.cmd('nohup python3 /home/mininet/dns-query-resolution/custom_dns.py > /tmp/dns.log 2>&1 &')
+time.sleep(3)
+print(dns.cmd('ps aux | grep custom_dns.py'))
+print(dns.cmd('tail -n 10 /tmp/dns.log'))
 output = dns.cmd('ps aux | grep custom_dns.py | grep -v grep')
 if output.strip():
     print("[OK] custom_dns.py is running:")
