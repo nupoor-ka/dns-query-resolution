@@ -44,13 +44,13 @@ class CustomTopo(Topo):
 def run():
     topo = CustomTopo()
     # Ensure you are passing the NAT class to Mininet for proper initialization
-    net = Mininet(topo=topo, controller=Controller, switch=OVSSwitch, link=TCLink, host=NAT) 
+    net = Mininet(topo=topo, controller=Controller, switch=OVSSwitch, link=TCLink) 
     
     net.start()
     info('*** Network started\n')
 
     # Get a list of your regular hosts (excluding the NAT node)
-    hosts = net.hosts[:-2] # Assuming DNS_Resolver is the second-to-last and nat is the last node
+    hosts = [net.get('h1'), net.get('h2'), net.get('h3'), net.get('h4')] # Assuming DNS_Resolver is the second-to-last and nat is the last node
                            # Better: use net.get('H1'), net.get('H2'), etc.
 
     nat_ip = "10.0.0.6" # The internal IP of the NAT node
