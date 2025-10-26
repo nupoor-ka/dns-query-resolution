@@ -24,6 +24,7 @@ for host in host_objs:
 # --- Function to check DNS connectivity using dig ---
 def check_dns(host):
     result = host.cmd('dig @10.0.0.5 google.com +short')
+    print(result)
     if result.strip():
         print(f"{host.name} is successfully using the custom DNS: {result.strip()}")
     else:
