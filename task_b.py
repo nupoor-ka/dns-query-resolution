@@ -9,10 +9,10 @@ net = Mininet(topo=topo, controller=Controller, link=TCLink)
 net.start()
 
 hosts = {
-    'h1': '/home/mininet/dns-query-resolution/H1_urls.txt',
-    'h2': '/home/mininet/dns-query-resolution/H2_urls.txt',
-    'h3': '/home/mininet/dns-query-resolution/H3_urls.txt',
-    'h4': '/home/mininet/dns-query-resolution/H4_urls.txt',
+    'H1': '/home/mininet/dns-query-resolution/H1_urls.txt',
+    'H2': '/home/mininet/dns-query-resolution/H2_urls.txt',
+    'H3': '/home/mininet/dns-query-resolution/H3_urls.txt',
+    'H4': '/home/mininet/dns-query-resolution/H4_urls.txt',
 }
 
 for hname, url_file in hosts.items():
