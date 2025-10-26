@@ -28,6 +28,7 @@ hosts = {
 for host in host_objs:
     print(f"Checking DNS for {host.name}...")
     result = host.cmd('dig +short google.com')
+    print(result)
     if result.strip():
         print(f"{host.name} is successfully using the custom DNS!")
     else:
