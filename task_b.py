@@ -3,7 +3,9 @@ from mininet.node import Controller
 from mininet.link import TCLink
 from mininet.cli import CLI
 from url_resolver_default import resolve_urls
-net = Mininet(controller=Controller, link=TCLink)
+from custom_topo import CustomTopo
+topo=CustomTopo()
+net = Mininet(topo=topo, controller=Controller, link=TCLink)
 net.start()
 
 hosts = {

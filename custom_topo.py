@@ -60,7 +60,11 @@ def run():
         info(f'Setting default route for {host.name} to {nat_ip}\n')
         # This command sets the default route for each host
         host.cmd('ip route add default via %s' % nat_ip) 
-
+    hosts = [net.get('H1'), net.get('H2'), net.get('H3'), net.get('H4')]
+    ########################
+    for host in hosts:
+        host.cmd('echo "nameserver 8.8.8.8" > /etc/resolv.conf')
+    #########################
     # If you want the 'DNS Resolver' host to have internet access too:
     net.get('dns').cmd('ip route add default via %s' % nat_ip)
 
