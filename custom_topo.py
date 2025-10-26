@@ -19,15 +19,15 @@ S2 - DNS resolver 100 Mbps, 5ms delay
 
 class CustomTopo(Topo):
     def build(self):
-        h1 = self.addHost('H1', ip = "10.0.0.1/24") # hosts
-        h2 = self.addHost('H2', ip = "10.0.0.2/24") # have to add ip addr in cidr notation - classless inter-domain routing
-        h3 = self.addHost('H3', ip = "10.0.0.3/24") # ip/prefix len
-        h4 = self.addHost('H4', ip = "10.0.0.4/24") # prefix len - same local network indicator, remaining bits will be used to identify indie hosts
+        h1 = self.addHost('h1', ip = "10.0.0.1/24") # hosts
+        h2 = self.addHost('h2', ip = "10.0.0.2/24") # have to add ip addr in cidr notation - classless inter-domain routing
+        h3 = self.addHost('h3', ip = "10.0.0.3/24") # ip/prefix len
+        h4 = self.addHost('h4', ip = "10.0.0.4/24") # prefix len - same local network indicator, remaining bits will be used to identify indie hosts
         dns = self.addHost('dns', ip = "10.0.0.5/24") # dns resolver
-        s1 = self.addSwitch('S1') # switches
-        s2 = self.addSwitch('S2')
-        s3 = self.addSwitch('S3')
-        s4 = self.addSwitch('S4')
+        s1 = self.addSwitch('s1') # switches
+        s2 = self.addSwitch('s2')
+        s3 = self.addSwitch('s3')
+        s4 = self.addSwitch('s4')
         nat= self.addNode('nat', cls=NAT, ip='10.0.0.6/24', inNamespace=False)
         self.addLink(h1, s1, bw = 100, delay = '2ms') # links
         self.addLink(h2, s2, bw = 100, delay = '2ms')
@@ -60,7 +60,7 @@ def run():
         info(f'Setting default route for {host.name} to {nat_ip}\n')
         # This command sets the default route for each host
         host.cmd('ip route add default via %s' % nat_ip) 
-    hosts = [net.get('H1'), net.get('H2'), net.get('H3'), net.get('H4')]
+    hosts = [net.get('h1'), net.get('h2'), net.get('h3'), net.get('h4')]
     ########################
     for host in hosts:
         host.cmd('echo "nameserver 8.8.8.8" > /etc/resolv.conf')
@@ -75,7 +75,7 @@ def run():
     
     info('*** Testing connectivity to the internet (e.g., pinging Google DNS)\n')
     # Try pinging a public IP from H1
-    h1 = net.get('H1')
+    h1 = net.get('h1')
     h1.cmd('ping -c 3 8.8.8.8') 
 
     CLI(net)

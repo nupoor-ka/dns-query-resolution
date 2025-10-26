@@ -10,7 +10,7 @@ net = Mininet(topo=topo, controller=Controller, link=TCLink)
 net.start()
 
 # --- Hosts and DNS ---
-host_objs = [net.get('H1'), net.get('H2'), net.get('H3'), net.get('H4')]
+host_objs = [net.get('h1'), net.get('h2'), net.get('h3'), net.get('h4')]
 dns = net.get('dns')
 
 # Start your custom DNS server in background
@@ -62,10 +62,10 @@ def resolve_urls_dig(host, url_file):
 
 # --- URL files ---
 hosts_files = {
-    'H1': '/home/mininet/dns-query-resolution/H1_urls.txt',
-    'H2': '/home/mininet/dns-query-resolution/H2_urls.txt',
-    'H3': '/home/mininet/dns-query-resolution/H3_urls.txt',
-    'H4': '/home/mininet/dns-query-resolution/H4_urls.txt',
+    'h1': '/home/mininet/dns-query-resolution/H1_urls.txt',
+    'h2': '/home/mininet/dns-query-resolution/H2_urls.txt',
+    'h3': '/home/mininet/dns-query-resolution/H3_urls.txt',
+    'h4': '/home/mininet/dns-query-resolution/H4_urls.txt',
 }
 
 # --- Resolve URLs for each host ---
