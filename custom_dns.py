@@ -1,10 +1,11 @@
 import socket
 import time
 import csv
-from dnslib import DNSRecord, DNSHeader, DNSQuestion, QTYPE, RR
+from dnslib import DNSRecord, DNSHeader, DNSQuestion, QTYPE, RR, A
 from collections import OrderedDict
 
-LISTEN_IP = "0.0.0.0" #to listen on all interfaces
+# ----------------- Configuration -----------------
+LISTEN_IP = "10.0.0.5"  # DNS server IP
 LISTEN_PORT = 53
 CACHE_LIMIT = 400
 ROOT_SERVERS = [
@@ -15,8 +16,7 @@ ROOT_SERVERS = [
 ]
 LOG_FILE = "/home/mininet/dns-query-resolution/dns_log.csv"
 
-#Least recently used cache
-
+# ----------------- LRU Cache -----------------
 class LRUCache:
     def __init__(self, capacity):
         self.cache = OrderedDict()
@@ -36,6 +36,7 @@ class LRUCache:
 
 cache = LRUCache(CACHE_LIMIT)
 
+# ----------------- Logging -----------------
 csv_file = open(LOG_FILE, 'w', newline='')
 csv_writer = csv.DictWriter(csv_file, fieldnames=[
     "timestamp","domain","resolution_mode","server_ip",
@@ -43,6 +44,7 @@ csv_writer = csv.DictWriter(csv_file, fieldnames=[
 ])
 csv_writer.writeheader()
 
+# ----------------- DNS Query -----------------
 def query_server(domain, server_ip):
     q = DNSRecord.question(domain)
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -59,12 +61,13 @@ def query_server(domain, server_ip):
     finally:
         s.close()
 
+# ----------------- Recursive Resolver -----------------
 def recursive_resolve(domain):
-    #Full recursive resolution: Root, TLD, Authoritative
     log_entries = []
     total_start = time.time()
 
-    cached = cache.get(domain) # checking cache
+    # Check cache first
+    cached = cache.get(domain)
     if cached:
         total_time = time.time() - total_start
         log_entries.append({
@@ -73,14 +76,14 @@ def recursive_resolve(domain):
             "resolution_mode": "Cache",
             "server_ip": "-",
             "step": "Cache",
-            "response_or_referral": cached,
+            "response": cached,
             "rtt": 0,
             "total_time": total_time,
             "cache_status": "HIT"
         })
         return cached, log_entries
 
-    #if MISS thrn recursive resolution
+    # Recursive resolution
     current_servers = ROOT_SERVERS.copy()
     response_ip = None
 
@@ -90,8 +93,9 @@ def recursive_resolve(domain):
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             if resp is None:
                 continue  # try next server
-            answer = resp.rr # will be ip, if auth server, else none
-            if answer: #found ip, was at auth sever ie
+
+            answer = resp.rr
+            if answer:
                 response_ip = str(answer[0].rdata)
                 log_entries.append({
                     "timestamp": timestamp,
@@ -105,21 +109,16 @@ def recursive_resolve(domain):
                     "cache_status": "MISS"
                 })
                 total_time = time.time() - total_start
-                # Update log total_time
                 for entry in log_entries:
                     entry["total_time"] = round(total_time, 4)
-                # Cache it
                 cache.put(domain, response_ip)
                 return response_ip, log_entries
-            # didn't find ip
-            authority = resp.auth # list of servers to check in next step
-            additional = resp.ar # list of ip addresses of those servers
-            new_servers = []
-            for rr in additional:
-                if rr.rtype == QTYPE.A:
-                    new_servers.append(str(rr.rdata))
+
+            # Prepare next set of servers
+            additional = resp.ar
+            new_servers = [str(rr.rdata) for rr in additional if rr.rtype == QTYPE.A]
             if new_servers:
-                current_servers = new_servers #looking at next step now
+                current_servers = new_servers
                 log_entries.append({
                     "timestamp": timestamp,
                     "domain": domain,
@@ -134,34 +133,48 @@ def recursive_resolve(domain):
                 break
         else:
             continue
+
     total_time = time.time() - total_start
     for entry in log_entries:
         entry["total_time"] = round(total_time, 4)
     return response_ip, log_entries
-#udp stuff
+
+# ----------------- UDP Socket -----------------
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT))
 print(f"DNS server listening on {LISTEN_IP}:{LISTEN_PORT}")
 
 try:
     while True:
-        data, addr = sock.recvfrom(512) # max 512 bytes, random cap
+        data, addr = sock.recvfrom(512)
         request = DNSRecord.parse(data)
-        qname = str(request.q.qname)
-        qname = qname.rstrip('.')  # remove trailing dot
+        qname = str(request.q.qname).rstrip('.')
+
         ip, logs = recursive_resolve(qname)
+
         for entry in logs:
             csv_writer.writerow(entry)
         csv_file.flush()
+
+        # Build reply
+        reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
         if ip:
-            reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
-            reply.add_answer(RR(rname=request.q.qname, rtype=QTYPE.A, rclass=1, ttl=60, rdata=ip))
-            sock.sendto(reply.pack(), addr)
-        else:
-            reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
-            sock.sendto(reply.pack(), addr)
+            try:
+                reply.add_answer(RR(
+                    rname=request.q.qname,
+                    rtype=QTYPE.A,
+                    rclass=1,
+                    ttl=60,
+                    rdata=A(ip)
+                ))
+            except Exception as e:
+                print(f"Error creating RR for {ip}: {e}")
+
+        sock.sendto(reply.pack(), addr)
+
 except KeyboardInterrupt:
-    print("keyboard interrupt")
+    print("Keyboard interrupt received, shutting down DNS server.")
+
 finally:
     csv_file.close()
     sock.close()
