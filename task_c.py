@@ -12,7 +12,9 @@ net.start()
 # List of host objects
 host_objs = [net.get('H1'), net.get('H2'), net.get('H3'), net.get('H4')]
 dns=net.get('dns')
-dns.cmd('python3 /home/mininet/dns-query-resolution/dns_resolver_c.py &')
+
+
+dns.cmd('python3 /home/mininet/dns-query-resolution/custom_dns.py &')
 
 for host in host_objs:
     host.cmd('echo "nameserver 10.0.0.5" > /etc/resolv.conf')
@@ -23,13 +25,21 @@ hosts = {
     'H3': '/home/mininet/dns-query-resolution/H3_urls.txt',
     'H4': '/home/mininet/dns-query-resolution/H4_urls.txt',
 }
+for host in host_objs:
+    print(f"Checking DNS for {host.name}...")
+    result = host.cmd('dig +short google.com')
+    if result.strip():
+        print(f"{host.name} is successfully using the custom DNS!")
+    else:
+        print(f"{host.name} could NOT reach the custom DNS.")
+
 
 for hname, url_file in hosts.items():
     print(f"Reading for {hname}")
     host = net.get(hname)
     print(f"Received {hname}")
     avg_latency, throughput, success, fail = resolve_urls(host, url_file)
-    print(f"\n=== {hname.upper()} ===")
+    print(f"\n{hname.upper()}")
     print(f"Average Latency: {avg_latency:.3f} s")
     print(f"Throughput: {throughput:.2f} queries/sec")
     print(f"Successful: {success}%, Failed: {fail}%")
