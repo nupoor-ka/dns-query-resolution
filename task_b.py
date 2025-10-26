@@ -16,7 +16,9 @@ hosts = {
 }
 
 for hname, url_file in hosts.items():
+    print(f"Reading for {hname}")
     host = net.get(hname)
+    print(f"recieved {hname}")
     avg_latency, throughput, success, fail = resolve_urls(host, url_file)
     print(f"\n=== {hname.upper()} ===")
     print(f"Average Latency: {avg_latency:.3f} s")
