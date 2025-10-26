@@ -4,9 +4,16 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from url_resolver_default import resolve_urls
 from custom_topo import CustomTopo
-topo=CustomTopo()
+
+topo = CustomTopo()
 net = Mininet(topo=topo, controller=Controller, link=TCLink)
 net.start()
+
+# List of host objects
+host_objs = [net.get('H1'), net.get('H2'), net.get('H3'), net.get('H4')]
+
+for host in host_objs:
+    host.cmd('echo "nameserver 8.8.8.8" > /etc/resolv.conf')
 
 hosts = {
     'H1': '/home/mininet/dns-query-resolution/H1_urls.txt',
@@ -18,7 +25,7 @@ hosts = {
 for hname, url_file in hosts.items():
     print(f"Reading for {hname}")
     host = net.get(hname)
-    print(f"recieved {hname}")
+    print(f"Received {hname}")
     avg_latency, throughput, success, fail = resolve_urls(host, url_file)
     print(f"\n=== {hname.upper()} ===")
     print(f"Average Latency: {avg_latency:.3f} s")
