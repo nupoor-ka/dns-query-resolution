@@ -11,10 +11,13 @@ def resolve_urls(host, url_file):
     success = 0
     fail = 0
     total_time = 0.0
-
+    c=0
     for url in urls:
         start = time.time()
         result = host.cmd(f'dig +short {url}')
+        c=c+1
+        if(c%1==0):
+            print("3 done")
         latency = time.time() - start
         if result.strip():
             success += 1
