@@ -23,7 +23,7 @@ class CustomTopo(Topo):
         h2 = self.addHost('H2', ip = "10.0.0.2/24") # have to add ip addr in cidr notation - classless inter-domain routing
         h3 = self.addHost('H3', ip = "10.0.0.3/24") # ip/prefix len
         h4 = self.addHost('H4', ip = "10.0.0.4/24") # prefix len - same local network indicator, remaining bits will be used to identify indie hosts
-        dns = self.addHost('DNS Resolver', ip = "10.0.0.5/24") # dns resolver
+        dns = self.addHost('dns', ip = "10.0.0.5/24") # dns resolver
         s1 = self.addSwitch('S1') # switches
         s2 = self.addSwitch('S2')
         s3 = self.addSwitch('S3')
@@ -39,56 +39,40 @@ class CustomTopo(Topo):
         self.addLink(dns, s2, bw = 100, delay = '1ms')
         self.addLink(nat, s2)
 
+# ... (imports and CustomTopo definition) ...
+
 def run():
     topo = CustomTopo()
-    # Use default Host class. The 'nat' node uses the NAT class from the topo definition.
-    net = Mininet(topo=topo, controller=Controller, switch=OVSSwitch, link=TCLink, host=Host)
+    # Ensure you are passing the NAT class to Mininet for proper initialization
+    net = Mininet(topo=topo, controller=Controller, switch=OVSSwitch, link=TCLink, host=NAT) 
+    
     net.start()
-    info('*** Network started and NAT initialized.\n')
+    info('*** Network started\n')
 
-    nat_ip = "10.0.0.6"       # IP of the NAT gateway
-    resolver_ip = "10.0.0.5"  # IP of your custom DNS Resolver host
+    # Get a list of your regular hosts (excluding the NAT node)
+    hosts = net.hosts[:-2] # Assuming DNS_Resolver is the second-to-last and nat is the last node
+                           # Better: use net.get('H1'), net.get('H2'), etc.
 
-    # 1. Configure the CUSTOM DNS RESOLVER HOST (10.0.0.5)
-    dns_resolver_host = net.get('DNS_Resolver')
-    
-    # Resolver needs a route to the internet (via NAT)
-    info(f'*** Configuring DNS Resolver ({resolver_ip}): Gateway={nat_ip}\n')
-    dns_resolver_host.cmd(f'ip route add default via {nat_ip}')
-    
-    # Resolver needs to know which public server to use for lookups
-    # This is the "internet" side of its DNS function
-    dns_resolver_host.cmd('echo "nameserver 8.8.8.8" > /etc/resolv.conf')
-    
-    # 2. Configure ALL OTHER HOSTS (H1, H2, H3, H4)
-    # They route via NAT but use 10.0.0.5 for DNS.
-    hosts_to_configure = [net.get(f'H{i}') for i in range(1, 5)]
+    nat_ip = "10.0.0.6" # The internal IP of the NAT node
 
-    info(f'*** Configuring H1-H4: Gateway={nat_ip}, DNS={resolver_ip}\n')
-    for host in hosts_to_configure:
-        # Set default route to the NAT node
-        host.cmd(f'ip route add default via {nat_ip}') 
-        
-        # CRITICAL: Set the DNS server to your custom DNS Resolver (10.0.0.5)
-        host.cmd(f'echo "nameserver {resolver_ip}" > /etc/resolv.conf')
-        
-    info('\n*** Configuration complete. Testing internet connectivity (via custom DNS)...\n')
+    info('*** Setting default routes for hosts to use NAT gateway\n')
+    for host in hosts:
+        info(f'Setting default route for {host.name} to {nat_ip}\n')
+        # This command sets the default route for each host
+        host.cmd('ip route add default via %s' % nat_ip) 
+
+    # If you want the 'DNS Resolver' host to have internet access too:
+    net.get('dns').cmd('ip route add default via %s' % nat_ip)
+
+    # Note: If your hosts still can't resolve public DNS names, 
+    # you may need to manually set their DNS server to a public one like 8.8.8.8:
+    # for host in hosts:
+    #     host.cmd('echo "nameserver 8.8.8.8" > /etc/resolv.conf')
     
+    info('*** Testing connectivity to the internet (e.g., pinging Google DNS)\n')
+    # Try pinging a public IP from H1
     h1 = net.get('H1')
-    
-    # Test 1: Ping IP (Tests routing via NAT)
-    ip_ping_result = h1.cmd('ping -c 2 8.8.8.8')
-    info(f'H1 Ping 8.8.8.8 result (Routing Test):\n{ip_ping_result}')
-
-    # Test 2: Dig a public URL (Tests DNS via 10.0.0.5 -> NAT -> Internet)
-    # This is the specific query path your task requires!
-    dns_dig_result = h1.cmd('dig +time=5 +tries=1 +short google.com')
-    info(f'H1 Dig google.com result (DNS Path Test):\n{dns_dig_result}\n')
-    
-    if "google.com" in dns_dig_result:
-        info("SUCCESS: DNS resolution via 10.0.0.5 is working.\n")
-    else:
-        info("WARNING: DNS resolution failed. Check the NAT and DNS_Resolver configuration.\n")
+    h1.cmd('ping -c 3 8.8.8.8') 
 
     CLI(net)
     net.stop()
