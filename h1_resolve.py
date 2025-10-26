@@ -8,7 +8,7 @@ import sys
 DNS_IP = '10.0.0.5' 
 HOST_NAME = 'h1'  # This script assumes it is running on 'h1'
 URL_FILE = f'/home/mininet/dns-query-resolution/{HOST_NAME.upper()}_urls.txt'
-
+print("USING H1")
 def run_cmd(command):
     """Executes a shell command in the current host's namespace and returns stdout."""
     try:
