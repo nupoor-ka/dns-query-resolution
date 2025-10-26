@@ -30,6 +30,6 @@ for hname, url_file in hosts.items():
     print(f"\n=== {hname.upper()} ===")
     print(f"Average Latency: {avg_latency:.3f} s")
     print(f"Throughput: {throughput:.2f} queries/sec")
-    print(f"Successful: {success}, Failed: {fail}")
+    print(f"Successful: {success}%, Failed: {fail}%")
 
 net.stop()
