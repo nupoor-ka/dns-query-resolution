@@ -16,7 +16,12 @@ dns = net.get('dns')
 # Start your custom DNS server in background
 dns.cmd('python3 /home/mininet/dns-query-resolution/custom_dns.py &')
 time.sleep(2)  # wait for DNS server to start
-
+output = dns.cmd('ps aux | grep custom_dns.py | grep -v grep')
+if output.strip():
+    print("[OK] custom_dns.py is running:")
+    print(output)
+else:
+    print("[ERROR] custom_dns.py not found in process list!")
 # --- Point all hosts to your custom DNS ---
 for host in host_objs:
     host.cmd('sh -c "echo nameserver 10.0.0.5 > /etc/resolv.conf"')
