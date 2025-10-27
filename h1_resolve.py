@@ -39,7 +39,7 @@ def resolve_urls_dig(url_file, dns_ip):
 
     for i, url in enumerate(urls, start=1): # for every url
         start = time.time()
-        command = f'dig @{dns_ip} {url} +short +tries=1' # short response, timeout 4 seconds, no retries
+        command = f'dig @{dns_ip} {url} +short +time=15 +tries=2' # short response, timeout 4 seconds, no retries
         result = run_cmd(command)
         latency = time.time() - start
         if result and ('connection timed out' not in result.lower()): # get empty or ;; connection timed out if it doesn't work
