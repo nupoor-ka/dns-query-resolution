@@ -17,11 +17,11 @@ def resolve_urls(host, url_file):
 
         if(ran%20==0): print(f"{ran} done") #check to ensure files are running
 
-        if (not result.strip()) or (result.strip()[2:].isalpha()):#if not a valid url then this
-            fail+=1
-        else:
+        if result and ('connection timed out' not in result.lower()):#if not a valid url then this
             success += 1
             total_time += latency
+        else:
+            fail+=1
 
     avg_latency = total_time / success if success else 0
     throughput = success / total_time if total_time > 0 else 0
