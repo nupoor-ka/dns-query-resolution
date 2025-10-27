@@ -4,7 +4,7 @@ import os
 import sys
 # decided to do just cli automation instead of automating everything as that wasn't working
 DNS_IP = '10.0.0.5' 
-HOST_NAME = 'h1'
+HOST_NAME = 'h4'
 URL_FILE = f'/home/mininet/dns-query-resolution/{HOST_NAME.upper()}_urls.txt'
 print(f"starting url resolution process for {HOST_NAME}")
 def run_cmd(command): # to run command in shell
