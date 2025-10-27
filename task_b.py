@@ -9,7 +9,7 @@ topo = CustomTopo()
 net = Mininet(topo=topo, controller=Controller, link=TCLink)
 net.start()
 
-# List of host objects
+#List of host objects
 host_objs = [net.get('h1'), net.get('h2'), net.get('h3'), net.get('h4')]
 
 for host in host_objs:
@@ -27,9 +27,9 @@ for hname, url_file in hosts.items():
     host = net.get(hname)
     print(f"Received {hname}")
     avg_latency, throughput, success, fail = resolve_urls(host, url_file)
-    print(f"\n=== {hname.upper()} ===")
+    print(f"\n{hname.upper()}")
     print(f"Average Latency: {avg_latency:.3f} s")
-    print(f"Throughput: {throughput:.2f} queries/sec")
+    print(f"Throughput: {throughput:.3f} queries/sec")
     print(f"Successful: {success}%, Failed: {fail}%")
 
 net.stop()
