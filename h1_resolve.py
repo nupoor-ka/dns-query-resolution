@@ -14,7 +14,7 @@ def run_cmd(command): # to run command in shell
             shell=True, 
             capture_output=True, 
             text=True, 
-            timeout=10 # generous timeout
+            timeout=15 # generous timeout
         )
         if result.returncode != 0 and result.stderr: # command failed
             print(f"command error: {command}\n{result.stderr.strip()}", file=sys.stderr)
