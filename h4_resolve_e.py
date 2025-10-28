@@ -6,7 +6,7 @@ import sys
 DNS_IP = '10.0.0.5'
 HOST_NAME = 'h4'
 URL_FILE = f'/home/mininet/dns-query-resolution/{HOST_NAME.upper()}_urls.txt'
-RECURSIVE_MODE = True   # 🔁 change to False for RD=0 (non-recursive)
+RECURSIVE_MODE = True   #change to False for RD=0 (non-recursive)
 
 print(f"starting url resolution process for {HOST_NAME}")
 print(f"recursion mode = {'ON (RD=1)' if RECURSIVE_MODE else 'OFF (RD=0)'}")
@@ -32,7 +32,7 @@ def resolve_urls_dig(url_file, dns_ip, recursive):
     success = 0
     fail = 0
     total_time = 0.0
-    print(f"\nresolving {len(urls)} URLs for {HOST_NAME} using DNS {dns_ip}...")
+    print(f"\nresolving {len(urls)} URLs for {HOST_NAME} using DNS {dns_ip}")
 
     dig_flag = "" if recursive else "+norecurse"
 
@@ -47,7 +47,7 @@ def resolve_urls_dig(url_file, dns_ip, recursive):
         else:
             fail += 1
         if i % 20 == 0:
-            print(f"{HOST_NAME}: {i} queries processed...")
+            print(f"{HOST_NAME}: {i} queries processed")
 
     avg_latency = total_time / success if success else 0
     throughput = success / total_time if total_time > 0 else 0

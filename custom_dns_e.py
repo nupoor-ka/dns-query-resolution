@@ -4,7 +4,7 @@ import csv
 from dnslib import DNSRecord, DNSHeader, QTYPE, RR, A
 from collections import OrderedDict
 
-# ------------------- Configuration -------------------
+#Configuration
 LISTEN_IP = "10.0.0.5"
 LISTEN_PORT = 53
 CACHE_LIMIT = 400
@@ -16,7 +16,7 @@ ROOT_SERVERS = [
 ]
 LOG_FILE = "/home/mininet/dns-query-resolution/dns_log_e.csv"
 
-# ------------------- LRU Cache -------------------
+#LRU Cache
 class LRUCache:
     def __init__(self, capacity):
         self.cache = OrderedDict()
@@ -36,7 +36,7 @@ class LRUCache:
 
 cache = LRUCache(CACHE_LIMIT)
 
-# ------------------- CSV Setup -------------------
+#CSV Setup
 csv_file = open(LOG_FILE, 'w', newline='')
 csv_writer = csv.DictWriter(csv_file, fieldnames=[
     "timestamp", "domain", "resolution_mode", "server_ip",
@@ -44,7 +44,7 @@ csv_writer = csv.DictWriter(csv_file, fieldnames=[
 ])
 csv_writer.writeheader()
 
-# ------------------- Query Helper -------------------
+#Query Helper
 def query_server(domain, server_ip):
     q = DNSRecord.question(domain)
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -61,7 +61,7 @@ def query_server(domain, server_ip):
     finally:
         s.close()
 
-# ------------------- Recursive Resolver -------------------
+#Recursive Resolver
 def recursive_resolve(domain):
     log_entries = []
     total_start = time.time()
@@ -134,7 +134,7 @@ def recursive_resolve(domain):
         entry["total_time"] = round(total_time, 4)
     return response_ip, log_entries
 
-# ------------------- Main Server -------------------
+#Main Server
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT))
 print(f"[+] Custom DNS Server listening on {LISTEN_IP}:{LISTEN_PORT}")
