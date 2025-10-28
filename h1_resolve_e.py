@@ -6,14 +6,14 @@ import sys
 DNS_IP = '10.0.0.5'
 HOST_NAME = 'h1'
 URL_FILE = f'/home/mininet/dns-query-resolution/{HOST_NAME.upper()}_urls.txt'
-RECURSIVE_MODE = True   # 🔁 change to False for RD=0 (non-recursive)
+RECURSIVE_MODE = True   #change to False for RD=0 (non-recursive)
 
 print(f"starting url resolution process for {HOST_NAME}")
 print(f"recursion mode = {'ON (RD=1)' if RECURSIVE_MODE else 'OFF (RD=0)'}")
 
 def run_cmd(command):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=20)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=40)
         if result.returncode != 0 and result.stderr:
             print(f"command error: {command}\n{result.stderr.strip()}", file=sys.stderr)
         return result.stdout.strip()

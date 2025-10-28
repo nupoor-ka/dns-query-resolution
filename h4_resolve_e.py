@@ -13,7 +13,7 @@ print(f"recursion mode = {'ON (RD=1)' if RECURSIVE_MODE else 'OFF (RD=0)'}")
 
 def run_cmd(command):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=20)
+        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=40)
         if result.returncode != 0 and result.stderr:
             print(f"command error: {command}\n{result.stderr.strip()}", file=sys.stderr)
         return result.stdout.strip()
