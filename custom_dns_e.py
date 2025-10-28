@@ -1,22 +1,22 @@
 import socket
 import time
 import csv
-from dnslib import DNSRecord, DNSHeader, DNSQuestion, QTYPE, RR, A
+from dnslib import DNSRecord, DNSHeader, QTYPE, RR, A
 from collections import OrderedDict
 
 # ------------------- Configuration -------------------
-LISTEN_IP = "10.0.0.5"       # IP address of the DNS server
-LISTEN_PORT = 53             # Default DNS UDP port
-CACHE_LIMIT = 400            # Cache capacity
+LISTEN_IP = "10.0.0.5"       # IP address of the DNS server in Mininet
+LISTEN_PORT = 53             # Standard DNS UDP port
+CACHE_LIMIT = 400            # Cache capacity (number of domains)
 ROOT_SERVERS = [
     "198.41.0.4", "170.247.170.2", "192.33.4.12", "199.7.91.13",
     "192.203.230.10", "192.5.5.241", "192.112.36.4", "198.97.190.53",
     "192.36.148.17", "192.58.128.30", "193.0.14.129", "199.7.83.42",
     "202.12.27.33"
 ]
-LOG_FILE = "/home/mininet/dns-query-resolution/dns_log.csv"
+LOG_FILE = "/home/mininet/dns-query-resolution/dns_log_e.csv"
 
-# ------------------- Simple LRU Cache -------------------
+# ------------------- LRU Cache -------------------
 class LRUCache:
     def __init__(self, capacity):
         self.cache = OrderedDict()
@@ -34,7 +34,6 @@ class LRUCache:
         if len(self.cache) > self.capacity:
             self.cache.popitem(last=False)
 
-# ------------------- Global Cache -------------------
 cache = LRUCache(CACHE_LIMIT)
 
 # ------------------- CSV Setup -------------------
@@ -47,6 +46,7 @@ csv_writer.writeheader()
 
 # ------------------- Query Helper -------------------
 def query_server(domain, server_ip):
+    """Send DNS query to a given server and return parsed response."""
     q = DNSRecord.question(domain)
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(3)
@@ -64,10 +64,12 @@ def query_server(domain, server_ip):
 
 # ------------------- Recursive Resolver -------------------
 def recursive_resolve(domain):
+    """Recursively resolve a domain starting from the root servers."""
     log_entries = []
     total_start = time.time()
-    cached = cache.get(domain)
 
+    # Check cache
+    cached = cache.get(domain)
     if cached:
         total_time = time.time() - total_start
         log_entries.append({
@@ -78,11 +80,12 @@ def recursive_resolve(domain):
             "step": "Cache",
             "response": cached,
             "rtt": 0,
-            "total_time": total_time,
+            "total_time": round(total_time, 4),
             "cache_status": "HIT"
         })
         return cached, log_entries
 
+    # Start from root servers
     current_servers = ROOT_SERVERS.copy()
     response_ip = None
 
@@ -94,7 +97,7 @@ def recursive_resolve(domain):
             if resp is None:
                 continue
 
-            # Found final answer
+            # If final answer (A record) found
             if resp.rr:
                 response_ip = str(resp.rr[0].rdata)
                 log_entries.append({
@@ -114,7 +117,7 @@ def recursive_resolve(domain):
                 cache.put(domain, response_ip)
                 return response_ip, log_entries
 
-            # Otherwise, move to next-level servers
+            # Otherwise, follow referrals
             additional = resp.ar
             new_servers = [str(rr.rdata) for rr in additional if rr.rtype == QTYPE.A]
             if new_servers:
@@ -130,8 +133,9 @@ def recursive_resolve(domain):
                     "total_time": 0,
                     "cache_status": "MISS"
                 })
-                break
+                break  # go to next step
 
+    # If failed
     total_time = time.time() - total_start
     for entry in log_entries:
         entry["total_time"] = round(total_time, 4)
@@ -140,54 +144,31 @@ def recursive_resolve(domain):
 # ------------------- Main DNS Server -------------------
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT))
-print(f"[+] Custom DNS Server listening on {LISTEN_IP}:{LISTEN_PORT}")
+print(f"[+] Recursive DNS Server running on {LISTEN_IP}:{LISTEN_PORT}")
 
 try:
     while True:
         data, addr = sock.recvfrom(512)
         request = DNSRecord.parse(data)
         qname = str(request.q.qname).rstrip('.')
+        print(f"[+] Received query for {qname}")
 
-        recursion_requested = bool(request.header.rd)
+        # Always resolve recursively (assignment requirement)
+        ip, logs = recursive_resolve(qname)
 
-        if recursion_requested:
-            print(f"[+] Recursive resolution requested for {qname}")
-            ip, logs = recursive_resolve(qname)
-            resolution_mode = "Recursive"
-        else:
-            print(f"[-] Non-recursive query received for {qname}")
-            cached_ip = cache.get(qname)
-            if cached_ip:
-                ip = cached_ip
-                logs = [{
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "domain": qname,
-                    "resolution_mode": "Non-Recursive",
-                    "server_ip": "-",
-                    "step": "Cache",
-                    "response": cached_ip,
-                    "rtt": 0,
-                    "total_time": 0,
-                    "cache_status": "HIT"
-                }]
-            else:
-                ip = None
-                logs = []
-            resolution_mode = "Non-Recursive"
-
-        # Write logs
+        # Write to CSV
         for entry in logs:
             csv_writer.writerow(entry)
         csv_file.flush()
 
-        # Build reply
+        # Build DNS response
         reply = DNSRecord(
             DNSHeader(
                 id=request.header.id,
                 qr=1,
                 aa=1,
                 ra=1,  # recursion available
-                rd=recursion_requested  # echo client’s RD flag
+                rd=1   # recursion desired (always)
             ),
             q=request.q
         )
@@ -202,12 +183,12 @@ try:
                     rdata=A(ip)
                 ))
             except Exception as e:
-                print(f"[!] Error creating RR for {ip}: {e}")
+                print(f"[!] Error adding RR for {ip}: {e}")
 
         sock.sendto(reply.pack(), addr)
 
 except KeyboardInterrupt:
-    print("\n[!] KeyboardInterrupt: shutting down DNS server")
+    print("\n[!] Shutting down recursive DNS server...")
 
 finally:
     csv_file.close()
